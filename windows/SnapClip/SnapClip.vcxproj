@@ -160,6 +160,11 @@
   <ItemGroup>
     <ProjectReference Include="..\SnapClipNative\SnapClipNative.csproj">
       <Project>{B5A46E72-8B5D-4C3E-9A2F-1D3E4F5A6B7C}</Project>
+      <Name>SnapClipNative</Name>
+      <Private>false</Private>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+      <UndefineProperties>TargetFramework;TargetFrameworkMoniker;TargetPlatformMoniker</UndefineProperties>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

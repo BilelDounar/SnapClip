@@ -9,6 +9,7 @@
     <UseWinUI>true</UseWinUI>
     <CsWinRTComponent>true</CsWinRTComponent>
     <Nullable>enable</Nullable>
+    <ReactNativeWindowsDir Condition="'$(ReactNativeWindowsDir)' == ''">$([MSBuild]::GetDirectoryNameOfFileAbove($(SolutionDir), 'node_modules\react-native-windows\package.json'))\node_modules\react-native-windows\</ReactNativeWindowsDir>
   </PropertyGroup>
 
   <ItemGroup>
