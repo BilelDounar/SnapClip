@@ -6,11 +6,13 @@ using System.Threading;
 
 namespace SnapClipNative
 {
+    public delegate void MouseEventHandler(string eventName);
+
     [ReactModule]
-    public sealed class InputHookModule
+    internal sealed class InputHookModule
     {
         [ReactEvent]
-        public Action<string>? OnMouseEvent { get; set; }
+        public MouseEventHandler? OnMouseEvent { get; set; }
 
         private static IntPtr _hookId = IntPtr.Zero;
         private static LowLevelMouseProc? _proc;

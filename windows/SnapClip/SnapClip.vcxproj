@@ -158,14 +158,11 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SnapClipNative\SnapClipNative.csproj">
-      <Project>{B5A46E72-8B5D-4C3E-9A2F-1D3E4F5A6B7C}</Project>
-      <Name>SnapClipNative</Name>
+    <Reference Include="SnapClipNative">
+      <HintPath>..\SnapClipNative\bin\$(PlatformName)\$(ConfigurationName)\SnapClipNative.winmd</HintPath>
+      <IsWinMDFile>true</IsWinMDFile>
       <Private>false</Private>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
-      <UndefineProperties>TargetFramework;TargetFrameworkMoniker;TargetPlatformMoniker</UndefineProperties>
-    </ProjectReference>
+    </Reference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ReactNativeWindowsTargets">

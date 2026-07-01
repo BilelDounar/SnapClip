@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace SnapClipNative
 {
     [ReactModule]
-    public sealed class OverlayWindowModule
+    internal sealed class OverlayWindowModule
     {
         [ReactMethod("getWindowBounds")]
         public void GetWindowBounds(int hwndInt, IReactPromise<string> promise)

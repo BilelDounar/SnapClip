@@ -10,7 +10,7 @@ using Windows.Media.Ocr;
 namespace SnapClipNative
 {
     [ReactModule]
-    public sealed class OcrModule
+    internal sealed class OcrModule
     {
         [ReactMethod("captureWindowText")]
         public async void CaptureWindowText(int hwndInt, IReactPromise<string> promise)

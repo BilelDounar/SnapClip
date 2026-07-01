@@ -9,7 +9,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SnapClip", "SnapClip\SnapCl
 		{B5A46E72-8B5D-4C3E-9A2F-1D3E4F5A6B7C} = {B5A46E72-8B5D-4C3E-9A2F-1D3E4F5A6B7C}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SnapClipNative", "SnapClipNative\SnapClipNative.csproj", "{B5A46E72-8B5D-4C3E-9A2F-1D3E4F5A6B7C}"
+Project("{A5A43C5B-DE2A-4C0C-9213-0A381AF9315B}") = "SnapClipNative", "SnapClipNative\SnapClipNative.csproj", "{B5A46E72-8B5D-4C3E-9A2F-1D3E4F5A6B7C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Folly", "..\node_modules\react-native-windows\Folly\Folly.vcxproj", "{A990658C-CE31-4BCC-976F-0FC6B1AF693D}"
 EndProject

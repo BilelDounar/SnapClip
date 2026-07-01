@@ -40,7 +40,7 @@ App::App() noexcept
     RegisterAutolinkedNativeModulePackages(PackageProviders()); // Includes any autolinked modules
 
     PackageProviders().Append(make<ReactPackageProvider>()); // Includes all modules in this project
-    PackageProviders().Append(make<SnapClipNative::ReactPackageProvider>()); // Includes C# native modules
+    PackageProviders().Append(SnapClipNative::ReactPackageProvider()); // Includes C# native modules
 
     InitializeComponent();
 }

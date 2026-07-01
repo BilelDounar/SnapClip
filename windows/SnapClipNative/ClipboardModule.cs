@@ -8,7 +8,7 @@ using Windows.ApplicationModel.DataTransfer;
 namespace SnapClipNative
 {
     [ReactModule]
-    public sealed class ClipboardModule
+    internal sealed class ClipboardModule
     {
         [ReactMethod("setText")]
         public void SetText(string text)
