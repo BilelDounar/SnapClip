@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import {
-  InputHookEvents,
+  getInputHookEvents,
   InputHookModule,
   OcrModule,
   OverlayModule,
@@ -26,7 +26,8 @@ function App(): React.JSX.Element {
 
   useEffect(() => {
     InputHookModule.startHook();
-    const subscription = InputHookEvents.addListener('OnMouseEvent', event => {
+    const events = getInputHookEvents();
+    const subscription = events.addListener('OnMouseEvent', (event: string) => {
       if (event === 'double-right-click' || event === 'long-right-click') {
         ClipboardModule.pasteAtCursor();
       }
