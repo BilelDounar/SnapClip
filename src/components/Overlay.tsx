@@ -1,17 +1,20 @@
-import React, {useState, useCallback} from 'react';
+import React, {useState, useCallback, useRef, useEffect} from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableWithoutFeedback,
   Dimensions,
+  Animated,
+  Easing,
 } from 'react-native';
 import {useSnapClipStore, type SelectedWord} from '../store/useSnapClipStore';
-import {ClipboardModule, type OcrResultBlock} from '../nativeModules';
+import {ClipboardModule} from '../nativeModules';
+import {useTheme} from '../theme/useTheme';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
 export function Overlay(): React.JSX.Element {
+  const theme = useTheme();
   const {
     blocks,
     selectedStart,
@@ -20,10 +23,19 @@ export function Overlay(): React.JSX.Element {
     selectEnd,
     setCopiedText,
     resetSelection,
-    deactivate,
   } = useSnapClipStore();
   const [hoveredBlock, setHoveredBlock] = useState<number | null>(null);
   const [flashBlock, setFlashBlock] = useState<number | null>(null);
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(overlayOpacity, {
+      toValue: 1,
+      duration: 200,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, [overlayOpacity]);
 
   const isSelected = useCallback(
     (blockIndex: number, wordIndex: number): boolean => {
@@ -120,7 +132,7 @@ export function Overlay(): React.JSX.Element {
 
   const triggerFlash = (blockIndex: number) => {
     setFlashBlock(blockIndex);
-    setTimeout(() => setFlashBlock(null), 150);
+    setTimeout(() => setFlashBlock(null), 300);
   };
 
   const handleBackgroundPress = () => {
@@ -128,48 +140,67 @@ export function Overlay(): React.JSX.Element {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={handleBackgroundPress}>
-      <View style={styles.overlay} pointerEvents="box-none">
-        {blocks.map((block, blockIndex) => (
-          <View
-            key={`block-${blockIndex}`}
-            style={[
-              styles.block,
-              {
-                left: block.x,
-                top: block.y,
-                width: block.width,
-                height: block.height,
-              },
-              hoveredBlock === blockIndex && styles.blockHover,
-              flashBlock === blockIndex && styles.blockFlash,
-            ]}
-            onPointerEnter={() => setHoveredBlock(blockIndex)}
-            onPointerLeave={() => setHoveredBlock(null)}>
-            <TouchableWithoutFeedback onPress={() => handleCopyAll(blockIndex)}>
-              <View style={styles.pin} />
-            </TouchableWithoutFeedback>
-            {hoveredBlock === blockIndex &&
-              block.words.map((word, wordIndex) => (
-                <TouchableWithoutFeedback
-                  key={`word-${blockIndex}-${wordIndex}`}
-                  onPress={() => handleWordPress(blockIndex, wordIndex)}>
-                  <View
-                    style={[
-                      styles.wordDot,
-                      {
-                        left: word.x - block.x + word.width / 2 - 3,
-                        top: word.y - block.y + word.height + 2,
-                      },
-                      isSelected(blockIndex, wordIndex) && styles.wordDotSelected,
-                    ]}
-                  />
-                </TouchableWithoutFeedback>
-              ))}
-          </View>
-        ))}
-      </View>
-    </TouchableWithoutFeedback>
+    <Animated.View
+      style={[styles.overlay, {opacity: overlayOpacity}]}
+      pointerEvents="box-none">
+      <TouchableWithoutFeedback onPress={handleBackgroundPress}>
+        <View style={styles.touchArea} pointerEvents="box-none">
+          {blocks.map((block, blockIndex) => (
+            <View
+              key={`block-${blockIndex}`}
+              style={[
+                styles.block,
+                {
+                  left: block.x,
+                  top: block.y,
+                  width: block.width,
+                  height: block.height,
+                  borderColor: theme.overlayBorder,
+                  backgroundColor: theme.overlay,
+                },
+                hoveredBlock === blockIndex && {
+                  borderColor: theme.overlayHoverBorder,
+                  backgroundColor: theme.overlayHover,
+                },
+                flashBlock === blockIndex && {
+                  backgroundColor: theme.flash,
+                  borderColor: theme.success,
+                },
+              ]}
+              onPointerEnter={() => setHoveredBlock(blockIndex)}
+              onPointerLeave={() => setHoveredBlock(null)}>
+              <TouchableWithoutFeedback onPress={() => handleCopyAll(blockIndex)}>
+                <View style={[styles.pin, {backgroundColor: theme.pin, shadowColor: theme.pinShadow}]}>
+                  <View style={styles.pinInner} />
+                </View>
+              </TouchableWithoutFeedback>
+              {hoveredBlock === blockIndex &&
+                block.words.map((word, wordIndex) => (
+                  <TouchableWithoutFeedback
+                    key={`word-${blockIndex}-${wordIndex}`}
+                    onPress={() => handleWordPress(blockIndex, wordIndex)}>
+                    <View
+                      style={[
+                        styles.wordDot,
+                        {
+                          left: word.x - block.x + word.width / 2 - 4,
+                          top: word.y - block.y + word.height + 3,
+                          backgroundColor: isSelected(blockIndex, wordIndex)
+                            ? theme.wordDotSelected
+                            : theme.wordDot,
+                          borderColor: isSelected(blockIndex, wordIndex)
+                            ? theme.successDark
+                            : 'transparent',
+                        },
+                      ]}
+                    />
+                  </TouchableWithoutFeedback>
+                ))}
+            </View>
+          ))}
+        </View>
+      </TouchableWithoutFeedback>
+    </Animated.View>
   );
 }
 
@@ -182,35 +213,39 @@ const styles = StyleSheet.create({
     height: screenHeight,
     backgroundColor: 'transparent',
   },
+  touchArea: {
+    flex: 1,
+  },
   block: {
     position: 'absolute',
-    borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.5)',
-    backgroundColor: 'transparent',
-  },
-  blockHover: {
-    borderColor: 'rgba(100, 149, 237, 0.8)',
-  },
-  blockFlash: {
-    backgroundColor: 'rgba(0, 255, 0, 0.3)',
+    borderWidth: 1.5,
+    borderRadius: 4,
   },
   pin: {
     position: 'absolute',
-    left: -8,
-    top: -16,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: 'rgba(128, 128, 128, 0.8)',
+    left: -10,
+    top: -20,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 5,
   },
-  wordDot: {
-    position: 'absolute',
+  pinInner: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(128, 128, 128, 0.6)',
+    backgroundColor: '#FFFFFF',
   },
-  wordDotSelected: {
-    backgroundColor: 'rgba(0, 200, 0, 1)',
+  wordDot: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1.5,
   },
 });

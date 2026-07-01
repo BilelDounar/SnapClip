@@ -1,14 +1,13 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
+  Animated,
   SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  useColorScheme,
   View,
+  Easing,
 } from 'react-native';
-import {Colors} from 'react-native/Libraries/NewAppScreen';
 import {
   getInputHookEvents,
   InputHookModule,
@@ -18,11 +17,43 @@ import {
 } from './src/nativeModules';
 import {useSnapClipStore} from './src/store/useSnapClipStore';
 import {Overlay} from './src/components/Overlay';
+import {ActionButton} from './src/components/ActionButton';
+import {StatusBadge} from './src/components/StatusBadge';
+import {useTheme} from './src/theme/useTheme';
 
 function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  const {mode, activate, deactivate, setSource, setBlocks, resetSelection} =
-    useSnapClipStore();
+  const theme = useTheme();
+  const {
+    mode,
+    activate,
+    deactivate,
+    setSource,
+    setBlocks,
+    resetSelection,
+    blocks,
+    copiedText,
+  } = useSnapClipStore();
+
+  const [loading, setLoading] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
 
   useEffect(() => {
     InputHookModule.startHook();
@@ -39,6 +70,7 @@ function App(): React.JSX.Element {
   }, []);
 
   const handleActivate = async () => {
+    setLoading(true);
     try {
       const hwnd = await OverlayModule.getForegroundWindow();
       setSource(hwnd);
@@ -48,6 +80,8 @@ function App(): React.JSX.Element {
       activate();
     } catch (error) {
       console.error('Activation failed', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,35 +90,68 @@ function App(): React.JSX.Element {
     resetSelection();
   };
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
+  const isActive = mode !== 'idle';
+  const isDark = theme.background === '#0F172A';
 
   return (
-    <SafeAreaView style={[styles.container, backgroundStyle]}>
+    <SafeAreaView style={[styles.container, {backgroundColor: theme.background}]}>
       <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.background}
       />
-      <View style={styles.content}>
-        <Text style={styles.title}>SnapClip</Text>
-        <Text style={styles.subtitle}>
-          {mode === 'idle'
-            ? 'Prêt à copier sans clavier'
-            : 'Mode copie actif'}
-        </Text>
-        <TouchableOpacity
-          style={[
-            styles.button,
-            mode === 'selecting' ? styles.buttonActive : null,
-          ]}
-          onPress={mode === 'idle' ? handleActivate : handleDeactivate}>
-          <Text style={styles.buttonText}>
-            {mode === 'idle' ? 'Activer' : 'Désactiver'}
+      <Animated.View
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{translateY: slideAnim}],
+          },
+        ]}>
+        <View style={styles.header}>
+          <View style={[styles.logoCircle, {backgroundColor: theme.primary, shadowColor: theme.primaryDark}]}>
+            <Text style={styles.logoText}>S</Text>
+          </View>
+          <Text style={[styles.title, {color: theme.text}]}>SnapClip</Text>
+          <Text style={[styles.subtitle, {color: theme.textSecondary}]}>
+            Extraction de texte par OCR · Collage à la souris
           </Text>
-        </TouchableOpacity>
-      </View>
-      {mode !== 'idle' && <Overlay />}
+        </View>
+
+        <View style={[styles.card, {backgroundColor: theme.surface, borderColor: theme.border, shadowColor: theme.shadow}]}>
+          <StatusBadge
+            mode={mode}
+            theme={theme}
+            blockCount={blocks.length}
+            copiedText={copiedText}
+          />
+
+          <View style={styles.spacer} />
+
+          <Text style={[styles.instruction, {color: theme.textMuted}]}>
+            {isActive
+              ? 'Cliquez un pin pour copier tout le bloc, ou survolez pour sélectionner mot par mot.'
+              : 'Activez SnapClip puis basculez vers la fenêtre source.'}
+          </Text>
+
+          <View style={styles.buttonRow}>
+            <ActionButton
+              label={isActive ? 'Désactiver' : 'Activer'}
+              onPress={isActive ? handleDeactivate : handleActivate}
+              theme={theme}
+              variant={isActive ? 'danger' : 'primary'}
+              loading={loading}
+            />
+          </View>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, {color: theme.textMuted}]}>
+            Double clic droit ou clic long droit pour coller
+          </Text>
+        </View>
+      </Animated.View>
+
+      {isActive && <Overlay />}
     </SafeAreaView>
   );
 }
@@ -97,31 +164,71 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: 28,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 36,
+  },
+  logoCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  logoText: {
+    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: '800',
   },
   title: {
-    fontSize: 40,
-    fontWeight: '700',
-    marginBottom: 8,
+    fontSize: 36,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 16,
-    marginBottom: 32,
-    opacity: 0.7,
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
-  button: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 14,
-    paddingHorizontal: 48,
-    borderRadius: 8,
+  card: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 22,
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 1,
+    shadowRadius: 24,
+    elevation: 6,
   },
-  buttonActive: {
-    backgroundColor: '#FF3B30',
+  spacer: {
+    height: 18,
   },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
+  instruction: {
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+    marginBottom: 22,
+    paddingHorizontal: 8,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  footer: {
+    marginTop: 28,
+  },
+  footerText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
 
