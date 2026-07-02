@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include <string>
+
 #include "App.h"
 
 #include "AutolinkedNativeModules.g.h"
@@ -40,7 +42,12 @@ App::App() noexcept
     RegisterAutolinkedNativeModulePackages(PackageProviders()); // Includes any autolinked modules
 
     PackageProviders().Append(make<ReactPackageProvider>()); // Includes all modules in this project
-    PackageProviders().Append(SnapClipNative::ReactPackageProvider()); // Includes C# native modules
+    try {
+        PackageProviders().Append(SnapClipNative::ReactPackageProvider()); // Includes C# native modules
+    } catch (winrt::hresult_error const& ex) {
+        auto msg = L"SnapClipNative::ReactPackageProvider failed: " + std::wstring(ex.message()) + L"\n";
+        OutputDebugStringW(msg.c_str());
+    }
 
     InitializeComponent();
 }

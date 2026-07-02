@@ -56,11 +56,15 @@ function App(): React.JSX.Element {
   }, [fadeAnim, slideAnim]);
 
   useEffect(() => {
+    if (!InputHookModule) {
+      console.warn('InputHookModule native module not available');
+      return;
+    }
     InputHookModule.startHook();
     const events = getInputHookEvents();
     const subscription = events.addListener('OnMouseEvent', (event: string) => {
       if (event === 'double-right-click' || event === 'long-right-click') {
-        ClipboardModule.pasteAtCursor();
+        ClipboardModule?.pasteAtCursor();
       }
     });
     return () => {

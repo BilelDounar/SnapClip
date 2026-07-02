@@ -4,9 +4,8 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{B5A46E72-8B5D-4C3E-9A2F-1D3E4F5A6B7C}</ProjectGuid>
-    <OutputType>winmdobj</OutputType>
-    <WinMDExpAdditionalOptions>/nowarn:1039</WinMDExpAdditionalOptions>
+    <ProjectGuid Condition="'$(ProjectGuid)' == ''">{B5A46E72-8B5D-4C3E-9A2F-1D3E4F5A6B7C}</ProjectGuid>
+    <OutputType Condition="'$(OutputType)' == ''">winmdobj</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SnapClipNative</RootNamespace>
     <AssemblyName>SnapClipNative</AssemblyName>

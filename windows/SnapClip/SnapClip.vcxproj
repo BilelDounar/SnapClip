@@ -158,12 +158,60 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="SnapClipNative">
-      <HintPath>..\SnapClipNative\bin\$(PlatformName)\$(ConfigurationName)\SnapClipNative.winmd</HintPath>
-      <IsWinMDFile>true</IsWinMDFile>
+    <ProjectReference Include="..\SnapClipNative\SnapClipNative.csproj">
+      <Project>{B5A46E72-8B5D-4C3E-9A2F-1D3E4F5A6B7C}</Project>
+      <Name>SnapClipNative</Name>
       <Private>false</Private>
-    </Reference>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+      <UndefineProperties>TargetFramework;TargetFrameworkMoniker;TargetPlatformMoniker</UndefineProperties>
+      <OutputItemType>Reference</OutputItemType>
+      <Targets>GetTargetPath</Targets>
+      <IsWinMDFile>true</IsWinMDFile>
+    </ProjectReference>
   </ItemGroup>
+  <Target Name="CopyManagedPayload" AfterTargets="Build">
+    <PropertyGroup>
+      <SnapClipNativeOutDir>..\SnapClipNative\bin\$(PlatformName)\$(ConfigurationName)\</SnapClipNativeOutDir>
+      <ManagedRuntimeDir Condition="'$(Platform)' == 'x64'">$(NuGetPackageRoot)microsoft.reactnative.managed\0.74.1\runtimes\win10-x64\native\</ManagedRuntimeDir>
+      <ManagedRuntimeDir Condition="'$(Platform)' == 'Win32'">$(NuGetPackageRoot)microsoft.reactnative.managed\0.74.1\runtimes\win10-x86\native\</ManagedRuntimeDir>
+      <ManagedRuntimeDir Condition="'$(Platform)' == 'ARM64'">$(NuGetPackageRoot)microsoft.reactnative.managed\0.74.1\runtimes\win10-arm64\native\</ManagedRuntimeDir>
+      <NetCoreRuntimeDir Condition="'$(Platform)' == 'x64'">$(NuGetPackageRoot)runtime.win10-x64.microsoft.netcore.universalwindowsplatform\6.2.14\runtimes\win10-x64\lib\uap10.0.15138\</NetCoreRuntimeDir>
+      <NetCoreRuntimeDir Condition="'$(Platform)' == 'Win32'">$(NuGetPackageRoot)runtime.win10-x86.microsoft.netcore.universalwindowsplatform\6.2.14\runtimes\win10-x86\lib\uap10.0.15138\</NetCoreRuntimeDir>
+      <NetCoreRuntimeDir Condition="'$(Platform)' == 'ARM64'">$(NuGetPackageRoot)runtime.win10-arm64.microsoft.netcore.universalwindowsplatform\6.2.14\runtimes\win10-arm64\lib\uap10.0.15138\</NetCoreRuntimeDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <ManagedPayload Include="$(SnapClipNativeOutDir)SnapClipNative.dll" />
+      <ManagedPayload Include="$(SnapClipNativeOutDir)SnapClipNative.winmd" />
+      <ManagedPayload Include="$(SnapClipNativeOutDir)SnapClipNative.pri" />
+      <ManagedPayload Include="$(ManagedRuntimeDir)Microsoft.ReactNative.Managed.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Runtime.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Diagnostics.Debug.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Collections.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.ObjectModel.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Linq.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Linq.Expressions.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Runtime.Extensions.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Threading.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Threading.Tasks.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Collections.Concurrent.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Diagnostics.Process.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Runtime.WindowsRuntime.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Text.Json.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Text.Encodings.Web.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Numerics.Vectors.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.ValueTuple.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Reflection.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Reflection.Extensions.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Reflection.Primitives.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Resources.ResourceManager.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Runtime.InteropServices.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Globalization.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.IO.dll" />
+      <NetCoreFacade Include="$(NetCoreRuntimeDir)System.Threading.Tasks.Parallel.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ManagedPayload);@(NetCoreFacade)" DestinationFolder="$(TargetDir)AppX" SkipUnchangedFiles="true" Condition="Exists('%(Identity)')" />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ReactNativeWindowsTargets">
     <Import Project="$(ReactNativeWindowsDir)\PropertySheets\External\Microsoft.ReactNative.Uwp.CppApp.targets" Condition="Exists('$(ReactNativeWindowsDir)\PropertySheets\External\Microsoft.ReactNative.Uwp.CppApp.targets')" />
