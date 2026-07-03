@@ -76,6 +76,13 @@ function App(): React.JSX.Element {
   const handleActivate = async () => {
     setLoading(true);
     try {
+      if (
+        !OverlayModule?.getForegroundWindow ||
+        !OcrModule?.captureWindowText
+      ) {
+        console.warn('OCR/Overlay native modules are not available');
+        return;
+      }
       const hwnd = await OverlayModule.getForegroundWindow();
       setSource(hwnd);
       const json = await OcrModule.captureWindowText(hwnd);
@@ -98,7 +105,8 @@ function App(): React.JSX.Element {
   const isDark = theme.background === '#0F172A';
 
   return (
-    <SafeAreaView style={[styles.container, {backgroundColor: theme.background}]}>
+    <SafeAreaView
+      style={[styles.container, {backgroundColor: theme.background}]}>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={theme.background}
@@ -112,7 +120,11 @@ function App(): React.JSX.Element {
           },
         ]}>
         <View style={styles.header}>
-          <View style={[styles.logoCircle, {backgroundColor: theme.primary, shadowColor: theme.primaryDark}]}>
+          <View
+            style={[
+              styles.logoCircle,
+              {backgroundColor: theme.primary, shadowColor: theme.primaryDark},
+            ]}>
             <Text style={styles.logoText}>S</Text>
           </View>
           <Text style={[styles.title, {color: theme.text}]}>SnapClip</Text>
@@ -121,7 +133,15 @@ function App(): React.JSX.Element {
           </Text>
         </View>
 
-        <View style={[styles.card, {backgroundColor: theme.surface, borderColor: theme.border, shadowColor: theme.shadow}]}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+              shadowColor: theme.shadow,
+            },
+          ]}>
           <StatusBadge
             mode={mode}
             theme={theme}

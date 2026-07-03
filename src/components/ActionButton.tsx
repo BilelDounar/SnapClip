@@ -1,11 +1,5 @@
 import React, {useEffect, useRef} from 'react';
-import {
-  Animated,
-  Pressable,
-  StyleSheet,
-  Text,
-  ViewStyle,
-} from 'react-native';
+import {Animated, Pressable, StyleSheet, Text} from 'react-native';
 import type {Theme} from '../theme/useTheme';
 
 interface ActionButtonProps {
@@ -52,10 +46,8 @@ export function ActionButton({
     }).start();
   };
 
-  const bgColor =
-    variant === 'danger' ? theme.danger : theme.primary;
-  const bgDark =
-    variant === 'danger' ? theme.dangerDark : theme.primaryDark;
+  const bgColor = variant === 'danger' ? theme.danger : theme.primary;
+  const bgDark = variant === 'danger' ? theme.dangerDark : theme.primaryDark;
 
   return (
     <Animated.View
