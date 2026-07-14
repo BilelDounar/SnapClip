@@ -7,9 +7,11 @@ import {
   Animated,
   Easing,
 } from 'react-native';
-import {useSnapClipStore, type SelectedWord} from '../store/useSnapClipStore';
+import {useSnapClipStore} from '../store/useSnapClipStore';
+import {useSettingsStore} from '../store/useSettingsStore';
 import {ClipboardModule} from '../nativeModules';
 import {useTheme} from '../theme/useTheme';
+import {extractSelectedText, isWordSelected} from '../lib/selection';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -17,6 +19,7 @@ export function Overlay(): React.JSX.Element {
   const theme = useTheme();
   const {
     blocks,
+    sourceBounds,
     selectedStart,
     selectedEnd,
     selectStart,
@@ -24,9 +27,15 @@ export function Overlay(): React.JSX.Element {
     setCopiedText,
     resetSelection,
   } = useSnapClipStore();
+  const showWordDots = useSettingsStore(state => state.showWordDots);
   const [hoveredBlock, setHoveredBlock] = useState<number | null>(null);
   const [flashBlock, setFlashBlock] = useState<number | null>(null);
   const overlayOpacity = useRef(new Animated.Value(0)).current;
+
+  // OCR coordinates are relative to the captured window; offset them by the
+  // source window's on-screen origin so the pins land over the real content.
+  const offsetX = sourceBounds?.x ?? 0;
+  const offsetY = sourceBounds?.y ?? 0;
 
   useEffect(() => {
     Animated.timing(overlayOpacity, {
@@ -38,71 +47,14 @@ export function Overlay(): React.JSX.Element {
   }, [overlayOpacity]);
 
   const isSelected = useCallback(
-    (blockIndex: number, wordIndex: number): boolean => {
-      if (!selectedStart) {
-        return false;
-      }
-      if (!selectedEnd) {
-        return (
-          selectedStart.blockIndex === blockIndex &&
-          selectedStart.wordIndex === wordIndex
-        );
-      }
-      const start =
-        selectedStart.blockIndex < selectedEnd.blockIndex ||
-        (selectedStart.blockIndex === selectedEnd.blockIndex &&
-          selectedStart.wordIndex <= selectedEnd.wordIndex)
-          ? selectedStart
-          : selectedEnd;
-      const end = start === selectedStart ? selectedEnd : selectedStart;
-
-      const blockIndexBetween =
-        blockIndex > start.blockIndex && blockIndex < end.blockIndex;
-      const sameBlockStart =
-        blockIndex === start.blockIndex && wordIndex >= start.wordIndex;
-      const sameBlockEnd =
-        blockIndex === end.blockIndex && wordIndex <= end.wordIndex;
-      const sameBlockOnly =
-        start.blockIndex === end.blockIndex &&
-        blockIndex === start.blockIndex &&
-        wordIndex >= start.wordIndex &&
-        wordIndex <= end.wordIndex;
-
-      return blockIndexBetween || sameBlockOnly || sameBlockStart || sameBlockEnd;
-    },
+    (blockIndex: number, wordIndex: number): boolean =>
+      isWordSelected(selectedStart, selectedEnd, blockIndex, wordIndex),
     [selectedStart, selectedEnd],
-  );
-
-  const extractText = useCallback(
-    (start: SelectedWord, end: SelectedWord): string => {
-      const orderedStart =
-        start.blockIndex < end.blockIndex ||
-        (start.blockIndex === end.blockIndex && start.wordIndex <= end.wordIndex)
-          ? start
-          : end;
-      const orderedEnd = orderedStart === start ? end : start;
-
-      const words: string[] = [];
-      for (let b = orderedStart.blockIndex; b <= orderedEnd.blockIndex; b++) {
-        const block = blocks[b];
-        if (!block) {
-          continue;
-        }
-        const startWord = b === orderedStart.blockIndex ? orderedStart.wordIndex : 0;
-        const endWord =
-          b === orderedEnd.blockIndex ? orderedEnd.wordIndex : block.words.length - 1;
-        for (let w = startWord; w <= endWord; w++) {
-          words.push(block.words[w]?.text ?? '');
-        }
-      }
-      return words.join(' ');
-    },
-    [blocks],
   );
 
   const handleCopyAll = (blockIndex: number) => {
     const text = blocks[blockIndex]?.text ?? '';
-    ClipboardModule.setText(text);
+    ClipboardModule?.setText(text);
     setCopiedText(text);
     triggerFlash(blockIndex);
     resetSelection();
@@ -113,18 +65,24 @@ export function Overlay(): React.JSX.Element {
       selectStart({blockIndex, wordIndex});
       return;
     }
-    if (selectedStart.blockIndex === blockIndex && selectedStart.wordIndex === wordIndex) {
+    if (
+      selectedStart.blockIndex === blockIndex &&
+      selectedStart.wordIndex === wordIndex
+    ) {
       // Copy single word
       const text = blocks[blockIndex]?.words[wordIndex]?.text ?? '';
-      ClipboardModule.setText(text);
+      ClipboardModule?.setText(text);
       setCopiedText(text);
       triggerFlash(blockIndex);
       resetSelection();
       return;
     }
     selectEnd({blockIndex, wordIndex});
-    const text = extractText(selectedStart, {blockIndex, wordIndex});
-    ClipboardModule.setText(text);
+    const text = extractSelectedText(blocks, selectedStart, {
+      blockIndex,
+      wordIndex,
+    });
+    ClipboardModule?.setText(text);
     setCopiedText(text);
     triggerFlash(blockIndex);
     resetSelection();
@@ -151,8 +109,8 @@ export function Overlay(): React.JSX.Element {
               style={[
                 styles.block,
                 {
-                  left: block.x,
-                  top: block.y,
+                  left: block.x + offsetX,
+                  top: block.y + offsetY,
                   width: block.width,
                   height: block.height,
                   borderColor: theme.overlayBorder,
@@ -169,12 +127,18 @@ export function Overlay(): React.JSX.Element {
               ]}
               onPointerEnter={() => setHoveredBlock(blockIndex)}
               onPointerLeave={() => setHoveredBlock(null)}>
-              <TouchableWithoutFeedback onPress={() => handleCopyAll(blockIndex)}>
-                <View style={[styles.pin, {backgroundColor: theme.pin, shadowColor: theme.pinShadow}]}>
+              <TouchableWithoutFeedback
+                onPress={() => handleCopyAll(blockIndex)}>
+                <View
+                  style={[
+                    styles.pin,
+                    {backgroundColor: theme.pin, shadowColor: theme.pinShadow},
+                  ]}>
                   <View style={styles.pinInner} />
                 </View>
               </TouchableWithoutFeedback>
-              {hoveredBlock === blockIndex &&
+              {showWordDots &&
+                hoveredBlock === blockIndex &&
                 block.words.map((word, wordIndex) => (
                   <TouchableWithoutFeedback
                     key={`word-${blockIndex}-${wordIndex}`}

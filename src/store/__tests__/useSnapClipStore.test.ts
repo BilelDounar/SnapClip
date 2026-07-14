@@ -5,19 +5,41 @@ describe('useSnapClipStore', () => {
     useSnapClipStore.setState({
       mode: 'idle',
       sourceHwnd: null,
+      sourceBounds: null,
       blocks: [],
       selectedStart: null,
       selectedEnd: null,
       copiedText: '',
+      history: [],
+      error: null,
     });
   });
 
-  it('should activate and deactivate', () => {
+  it('should arm, activate and deactivate', () => {
+    useSnapClipStore.getState().arm();
+    expect(useSnapClipStore.getState().mode).toBe('arming');
+
     useSnapClipStore.getState().activate();
     expect(useSnapClipStore.getState().mode).toBe('selecting');
 
     useSnapClipStore.getState().deactivate();
     expect(useSnapClipStore.getState().mode).toBe('idle');
+  });
+
+  it('should record copies in history without duplicates, newest first', () => {
+    const store = useSnapClipStore.getState();
+    store.setCopiedText('first');
+    store.setCopiedText('second');
+    store.setCopiedText('first');
+    expect(useSnapClipStore.getState().history).toEqual(['first', 'second']);
+    expect(useSnapClipStore.getState().copiedText).toBe('first');
+  });
+
+  it('should clear error when arming', () => {
+    useSnapClipStore.getState().setError('boom');
+    expect(useSnapClipStore.getState().error).toBe('boom');
+    useSnapClipStore.getState().arm();
+    expect(useSnapClipStore.getState().error).toBeNull();
   });
 
   it('should set source and blocks', () => {

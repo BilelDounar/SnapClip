@@ -9,6 +9,7 @@ interface ActionButtonProps {
   variant?: 'primary' | 'danger';
   icon?: string;
   loading?: boolean;
+  disabled?: boolean;
 }
 
 export function ActionButton({
@@ -17,7 +18,9 @@ export function ActionButton({
   theme,
   variant = 'primary',
   loading = false,
+  disabled = false,
 }: ActionButtonProps): React.JSX.Element {
+  const isDisabled = loading || disabled;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -62,12 +65,13 @@ export function ActionButton({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={onPress}
-        disabled={loading}
+        disabled={isDisabled}
         style={({pressed}) => [
           styles.button,
           {
             backgroundColor: pressed ? bgDark : bgColor,
             shadowColor: theme.shadowElevated,
+            opacity: disabled ? 0.5 : 1,
           },
         ]}>
         <Text style={styles.label}>{loading ? '...' : label}</Text>
