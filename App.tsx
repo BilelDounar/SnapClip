@@ -19,10 +19,11 @@ import {useSnapClipStore} from './src/store/useSnapClipStore';
 import {Overlay} from './src/components/Overlay';
 import {ActionButton} from './src/components/ActionButton';
 import {StatusBadge} from './src/components/StatusBadge';
-import {useTheme} from './src/theme/useTheme';
+import {useTheme, useIsDark} from './src/theme/useTheme';
 
 function App(): React.JSX.Element {
   const theme = useTheme();
+  const isDark = useIsDark();
   const {
     mode,
     activate,
@@ -63,7 +64,13 @@ function App(): React.JSX.Element {
     InputHookModule.startHook();
     const events = getInputHookEvents();
     const subscription = events.addListener('OnMouseEvent', (event: string) => {
-      if (event === 'double-right-click' || event === 'long-right-click') {
+      if (event !== 'double-right-click' && event !== 'long-right-click') {
+        return;
+      }
+      // Armement du collage : n'injecter que si un texte a réellement été
+      // copié via SnapClip. Sans ce garde, chaque double/long clic droit
+      // ailleurs sous Windows déclencherait un collage parasite.
+      if (useSnapClipStore.getState().copiedText) {
         ClipboardModule?.pasteAtCursor();
       }
     });
@@ -102,7 +109,6 @@ function App(): React.JSX.Element {
   };
 
   const isActive = mode !== 'idle';
-  const isDark = theme.background === '#0F172A';
 
   return (
     <SafeAreaView

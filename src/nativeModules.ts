@@ -43,15 +43,20 @@ export interface InputHookModuleType {
 }
 
 export const OcrModule = NativeModules.OcrModule as OcrModuleType;
-export const OverlayModule = NativeModules.OverlayWindowModule as OverlayModuleType;
-export const ClipboardModule = NativeModules.ClipboardModule as ClipboardModuleType;
-export const InputHookModule = NativeModules.InputHookModule as InputHookModuleType;
+export const OverlayModule =
+  NativeModules.OverlayWindowModule as OverlayModuleType;
+export const ClipboardModule =
+  NativeModules.ClipboardModule as ClipboardModuleType;
+export const InputHookModule =
+  NativeModules.InputHookModule as InputHookModuleType;
 
 let inputHookEvents: NativeEventEmitter | null = null;
 export function getInputHookEvents(): NativeEventEmitter {
   if (!inputHookEvents) {
     const {NativeEventEmitter} = require('react-native');
-    inputHookEvents = new NativeEventEmitter(InputHookModule as any) as NativeEventEmitter;
+    inputHookEvents = new NativeEventEmitter(
+      InputHookModule as any,
+    ) as NativeEventEmitter;
   }
   return inputHookEvents as NativeEventEmitter;
 }

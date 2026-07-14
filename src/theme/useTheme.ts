@@ -6,5 +6,9 @@ export function useTheme(): Theme {
   return isDark ? darkTheme : lightTheme;
 }
 
+export function useIsDark(): boolean {
+  return useColorScheme() === 'dark';
+}
+
 export {lightTheme, darkTheme};
 export type {Theme};

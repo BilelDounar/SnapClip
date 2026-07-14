@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useRef, useEffect} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
   StyleSheet,
@@ -7,9 +7,10 @@ import {
   Animated,
   Easing,
 } from 'react-native';
-import {useSnapClipStore, type SelectedWord} from '../store/useSnapClipStore';
+import {useSnapClipStore} from '../store/useSnapClipStore';
 import {ClipboardModule} from '../nativeModules';
 import {useTheme} from '../theme/useTheme';
+import {isWordInSelection, extractSelectedText} from '../lib/selection';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -37,75 +38,18 @@ export function Overlay(): React.JSX.Element {
     }).start();
   }, [overlayOpacity]);
 
-  const isSelected = useCallback(
-    (blockIndex: number, wordIndex: number): boolean => {
-      if (!selectedStart) {
-        return false;
-      }
-      if (!selectedEnd) {
-        return (
-          selectedStart.blockIndex === blockIndex &&
-          selectedStart.wordIndex === wordIndex
-        );
-      }
-      const start =
-        selectedStart.blockIndex < selectedEnd.blockIndex ||
-        (selectedStart.blockIndex === selectedEnd.blockIndex &&
-          selectedStart.wordIndex <= selectedEnd.wordIndex)
-          ? selectedStart
-          : selectedEnd;
-      const end = start === selectedStart ? selectedEnd : selectedStart;
+  const isSelected = (blockIndex: number, wordIndex: number): boolean =>
+    isWordInSelection(blockIndex, wordIndex, selectedStart, selectedEnd);
 
-      const blockIndexBetween =
-        blockIndex > start.blockIndex && blockIndex < end.blockIndex;
-      const sameBlockStart =
-        blockIndex === start.blockIndex && wordIndex >= start.wordIndex;
-      const sameBlockEnd =
-        blockIndex === end.blockIndex && wordIndex <= end.wordIndex;
-      const sameBlockOnly =
-        start.blockIndex === end.blockIndex &&
-        blockIndex === start.blockIndex &&
-        wordIndex >= start.wordIndex &&
-        wordIndex <= end.wordIndex;
-
-      return blockIndexBetween || sameBlockOnly || sameBlockStart || sameBlockEnd;
-    },
-    [selectedStart, selectedEnd],
-  );
-
-  const extractText = useCallback(
-    (start: SelectedWord, end: SelectedWord): string => {
-      const orderedStart =
-        start.blockIndex < end.blockIndex ||
-        (start.blockIndex === end.blockIndex && start.wordIndex <= end.wordIndex)
-          ? start
-          : end;
-      const orderedEnd = orderedStart === start ? end : start;
-
-      const words: string[] = [];
-      for (let b = orderedStart.blockIndex; b <= orderedEnd.blockIndex; b++) {
-        const block = blocks[b];
-        if (!block) {
-          continue;
-        }
-        const startWord = b === orderedStart.blockIndex ? orderedStart.wordIndex : 0;
-        const endWord =
-          b === orderedEnd.blockIndex ? orderedEnd.wordIndex : block.words.length - 1;
-        for (let w = startWord; w <= endWord; w++) {
-          words.push(block.words[w]?.text ?? '');
-        }
-      }
-      return words.join(' ');
-    },
-    [blocks],
-  );
-
-  const handleCopyAll = (blockIndex: number) => {
-    const text = blocks[blockIndex]?.text ?? '';
-    ClipboardModule.setText(text);
+  const copyText = (text: string, blockIndex: number) => {
+    ClipboardModule?.setText(text);
     setCopiedText(text);
     triggerFlash(blockIndex);
     resetSelection();
+  };
+
+  const handleCopyAll = (blockIndex: number) => {
+    copyText(blocks[blockIndex]?.text ?? '', blockIndex);
   };
 
   const handleWordPress = (blockIndex: number, wordIndex: number) => {
@@ -113,21 +57,19 @@ export function Overlay(): React.JSX.Element {
       selectStart({blockIndex, wordIndex});
       return;
     }
-    if (selectedStart.blockIndex === blockIndex && selectedStart.wordIndex === wordIndex) {
-      // Copy single word
-      const text = blocks[blockIndex]?.words[wordIndex]?.text ?? '';
-      ClipboardModule.setText(text);
-      setCopiedText(text);
-      triggerFlash(blockIndex);
-      resetSelection();
+    if (
+      selectedStart.blockIndex === blockIndex &&
+      selectedStart.wordIndex === wordIndex
+    ) {
+      // Re-clic sur le mot de départ : copie ce seul mot.
+      copyText(blocks[blockIndex]?.words[wordIndex]?.text ?? '', blockIndex);
       return;
     }
     selectEnd({blockIndex, wordIndex});
-    const text = extractText(selectedStart, {blockIndex, wordIndex});
-    ClipboardModule.setText(text);
-    setCopiedText(text);
-    triggerFlash(blockIndex);
-    resetSelection();
+    copyText(
+      extractSelectedText(blocks, selectedStart, {blockIndex, wordIndex}),
+      blockIndex,
+    );
   };
 
   const triggerFlash = (blockIndex: number) => {
@@ -169,8 +111,13 @@ export function Overlay(): React.JSX.Element {
               ]}
               onPointerEnter={() => setHoveredBlock(blockIndex)}
               onPointerLeave={() => setHoveredBlock(null)}>
-              <TouchableWithoutFeedback onPress={() => handleCopyAll(blockIndex)}>
-                <View style={[styles.pin, {backgroundColor: theme.pin, shadowColor: theme.pinShadow}]}>
+              <TouchableWithoutFeedback
+                onPress={() => handleCopyAll(blockIndex)}>
+                <View
+                  style={[
+                    styles.pin,
+                    {backgroundColor: theme.pin, shadowColor: theme.pinShadow},
+                  ]}>
                   <View style={styles.pinInner} />
                 </View>
               </TouchableWithoutFeedback>
