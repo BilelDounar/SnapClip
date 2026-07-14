@@ -1,0 +1,35 @@
+[package]
+name = "snapclip"
+version = "0.1.0"
+description = "SnapClip — capture, copy and paste text with the mouse"
+authors = ["SnapClip"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "snapclip_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png", "macos-private-api"] }
+tauri-plugin-clipboard-manager = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Cross-platform window capture (Windows / macOS / Linux X11 & Wayland).
+xcap = "0.9"
+image = "0.25"
+# OCR via the local Tesseract engine (word-level bounding boxes).
+rusty-tesseract = "1.1.10"
+# Cross-platform input simulation (paste at cursor).
+enigo = "0.2"
+# Global mouse listening for the paste gesture.
+rdev = "0.5"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

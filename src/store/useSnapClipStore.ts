@@ -1,18 +1,13 @@
 import {create} from 'zustand';
-import type {OcrResultBlock} from '../nativeModules';
+import type {OcrResultBlock, WindowBounds} from '../types';
+
+export type {WindowBounds};
 
 export type AppMode = 'idle' | 'arming' | 'selecting' | 'copying';
 
 export interface SelectedWord {
   blockIndex: number;
   wordIndex: number;
-}
-
-export interface WindowBounds {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
 }
 
 const HISTORY_LIMIT = 8;

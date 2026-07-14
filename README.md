@@ -1,70 +1,78 @@
 # SnapClip
 
-SnapClip est un utilitaire Windows de productivité permettant l'extraction ultra-rapide de texte depuis une application source et son injection instantanée dans une application cible, le tout à la souris.
+**SnapClip** est un utilitaire de productivité **multi-plateforme** (Windows, macOS, Linux) pensé pour une seule chose : **capturer, copier et coller du texte le plus vite possible — entièrement à la souris**, sans raccourci clavier. Il vit dans la barre système (à côté de l'horloge) et s'active en un clic.
 
-## Fonctionnement
+## Idée
 
-1. **Armer la capture** : cliquez sur « Armer la capture ». Un compte à rebours démarre (délai configurable) pendant lequel vous basculez vers la fenêtre à capturer — la capture cible ainsi la fenêtre *source* et non SnapClip.
-2. **Sélectionner** : SnapClip effectue un OCR de la fenêtre au premier plan et affiche des « pins » sur chaque bloc détecté.
-   - Cliquez un pin pour copier le bloc entier.
-   - Survolez un bloc puis cliquez les pastilles pour sélectionner mot par mot (sélection multi-blocs prise en charge).
-3. **Coller** : dans la fenêtre cible, un **double clic droit** ou un **clic long droit** colle le texte à la position du curseur (geste configurable).
+1. **Armer** la capture (clic sur l'icône de la barre système, ou depuis la fenêtre).
+2. Un court compte à rebours vous laisse **basculer vers la fenêtre source**.
+3. SnapClip prend un instantané de cette fenêtre, l'analyse par **OCR** et affiche des « pins » sur chaque bloc de texte.
+   - **Clic sur un pin** → le bloc entier est copié.
+   - **Survol d'un bloc puis clic sur les pastilles** → sélection fine, mot par mot (multi-blocs pris en charge).
+4. Dans la fenêtre cible, un **double clic droit** ou un **clic long droit** colle le texte au curseur.
 
-Les 8 derniers extraits sont conservés dans un historique ; un clic les recopie dans le presse-papiers.
-
-### Réglages
-
-Accessibles depuis l'écran principal :
-
-- **Délai de capture** : temps laissé pour basculer vers la fenêtre source (immédiat, 1,5 s, 3 s, 5 s).
-- **Geste de collage** : double clic droit, clic long droit, ou les deux.
-- **Sélection par mot** : active/désactive les pastilles de sélection fine.
+Tout se fait au pointeur. Les 8 derniers extraits sont conservés et re-copiables d'un clic.
 
 ## Architecture
 
-- **Framework** : React Native for Windows 0.74 + TypeScript
-- **Modules natifs** : Windows Runtime Component C# (`windows/SnapClipNative`)
-  - `OcrModule` : capture de fenêtre + OCR Windows (`Windows.Media.Ocr`)
-  - `OverlayWindowModule` : positionnement et informations sur les fenêtres
-  - `InputHookModule` : hook souris global (`WH_MOUSE_LL`)
-  - `ClipboardModule` : presse-papiers + simulation `Ctrl+V`
-- **State** : Zustand
+- **Frontend** : React + TypeScript + Vite (deux fenêtres : le panneau de contrôle et l'overlay transparent).
+- **Backend** : [Tauri 2](https://tauri.app) (Rust) — binaire léger, barre système native, fenêtres transparentes.
+- **État** : Zustand (réglages persistés localement).
+- **Modules natifs Rust** (cross-platform) :
+  - Capture de fenêtre : [`xcap`](https://crates.io/crates/xcap)
+  - OCR : [`rusty-tesseract`](https://crates.io/crates/rusty-tesseract) (moteur Tesseract, boîtes au niveau du mot)
+  - Simulation de collage : [`enigo`](https://crates.io/crates/enigo) (Ctrl+V / Cmd+V)
+  - Écoute souris globale (geste de collage) : [`rdev`](https://crates.io/crates/rdev)
 
 ## Prérequis
 
-- Windows 10/11
 - Node.js 18+
-- Visual Studio 2022 avec les workloads :
-  - Développement pour la plateforme Windows universelle
-  - Développement Desktop C++
-- Windows SDK 10.0.19041+
+- Rust (stable) et Cargo
+- **Tesseract OCR** installé et dans le `PATH` :
+  - Windows : [UB-Mannheim/tesseract](https://github.com/UB-Mannheim/tesseract/wiki)
+  - macOS : `brew install tesseract`
+  - Linux : `sudo apt install tesseract-ocr`
+- Dépendances système Linux (build) : `libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libxi-dev libxtst-dev libpipewire-0.3-dev libdbus-1-dev`
 
-## Installation
+## Développement
 
 ```bash
 npm install
+npm run tauri dev      # lance l'app de bureau (Vite + Tauri)
 ```
 
-## Lancer l'application
+Frontend seul (dans le navigateur, sans capture native) :
 
 ```bash
-npm start          # Metro bundler
-npx react-native run-windows
+npm run dev
 ```
 
-## Tests
+## Qualité
 
 ```bash
-npm test
+npm run lint           # ESLint
+npx tsc --noEmit       # typage
+npm test               # Vitest (logique de sélection, stores, réglages)
 ```
 
-## Packaging
+## Build
 
-Le projet génère un package MSIX via le projet UWP `windows/SnapClip`. Le manifeste inclut la capacité `runFullTrust` nécessaire aux hooks souris globaux et à la simulation d'entrée clavier.
+```bash
+npx tauri icon src-tauri/app-icon.png   # génère les icônes (ico/icns/png)
+npm run tauri build                      # binaire + installeurs de la plateforme
+```
 
-## Remarques importantes
+La CI compile le frontend puis l'application sur **Ubuntu, macOS et Windows**.
 
-- L'application nécessite la capacité `runFullTrust` pour interagir avec d'autres fenêtres Windows.
-- Les hooks globaux et la simulation de touches peuvent être bloqués par certains antivirus ou nécessiter une exécution en administrateur.
-- Le développement et le débogage nécessitent un environnement Windows complet avec Visual Studio.
-- Les coordonnées OCR sont décalées via `OverlayWindowModule.getWindowBounds` pour aligner les pins sur la fenêtre source. L'overlay est actuellement rendu dans la fenêtre de l'application ; un rendu dans une fenêtre transparente *topmost* click-through est le prochain jalon pour une superposition parfaite au-dessus de la fenêtre source.
+## Réglages
+
+- **Délai de capture** : temps pour basculer vers la source (immédiat, 1,5 s, 3 s, 5 s).
+- **Geste de collage** : double clic droit, clic long droit, ou les deux.
+- **Sélection par mot** : active/désactive les pastilles fines.
+- **Rester dans la barre système** : garde SnapClip actif à la fermeture de la fenêtre.
+
+## Remarques
+
+- **Permissions** : l'écoute souris globale et la simulation de collage nécessitent, selon l'OS, des autorisations d'accessibilité (macOS : Réglages → Confidentialité → Accessibilité) ou une session X11/Wayland compatible (Linux).
+- **OCR hors-ligne** : aucun texte n'est envoyé sur le réseau ; la reconnaissance est locale.
+- **Overlay** : la fenêtre d'overlay est transparente, sans bordure et toujours au premier plan ; les coordonnées OCR sont décalées par les bornes de la fenêtre source (`xcap`) pour aligner les pins. Le passage en click-through par-zone reste un axe d'amélioration selon les plateformes.

@@ -1,4 +1,4 @@
-import type {OcrResultBlock} from '../nativeModules';
+import type {OcrResultBlock} from '../types';
 import type {SelectedWord} from '../store/useSnapClipStore';
 
 /**

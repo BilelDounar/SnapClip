@@ -4,7 +4,7 @@ import {
   isWordSelected,
   orderSelection,
 } from '../selection';
-import type {OcrResultBlock} from '../../nativeModules';
+import type {OcrResultBlock} from '../../types';
 
 const blocks: OcrResultBlock[] = [
   {
