@@ -59,11 +59,16 @@ export function StatusBadge({
 
   const isActive = mode !== 'idle';
   const dotColor = isActive ? theme.success : theme.textMuted;
-  const label = mode === 'idle'
-    ? 'En attente'
-    : mode === 'selecting'
-    ? `${blockCount} bloc${blockCount > 1 ? 's' : ''} détecté${blockCount > 1 ? 's' : ''}`
-    : 'Copie en cours...';
+  const label =
+    mode === 'idle'
+      ? 'En attente'
+      : mode === 'arming'
+      ? 'Armé · basculez vers la source'
+      : mode === 'selecting'
+      ? `${blockCount} bloc${blockCount > 1 ? 's' : ''} détecté${
+          blockCount > 1 ? 's' : ''
+        }`
+      : 'Copie en cours...';
 
   return (
     <Animated.View
@@ -91,14 +96,13 @@ export function StatusBadge({
             },
           ]}
         />
-        <Text style={[styles.text, {color: theme.textSecondary}]}>
-          {label}
-        </Text>
+        <Text style={[styles.text, {color: theme.textSecondary}]}>{label}</Text>
       </View>
       {copiedText.length > 0 && (
         <View style={[styles.copiedBadge, {backgroundColor: theme.success}]}>
           <Text style={styles.copiedText}>
-            Copié : {copiedText.length > 30
+            Copié :{' '}
+            {copiedText.length > 30
               ? copiedText.substring(0, 30) + '...'
               : copiedText}
           </Text>
